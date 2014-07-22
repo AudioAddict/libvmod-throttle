@@ -15,8 +15,14 @@ varnish v1 -vcl+backend {
 		set resp.http.x-one = throttle.is_allowed("" + client.ip, "2req/60s");
 		set resp.http.x-two = throttle.is_allowed("" + client.ip, "2req/60s");
 		set resp.http.x-three = throttle.is_allowed("" + client.ip, "2req/60s");
+		set resp.http.x-four = throttle.is_allowed("" + client.ip, "100req/h");
 
-		set resp.http.X-throttle-remaining-calls = throttle.remaining_calls("" + client.ip, "100req/h");
+		set resp.http.x-throttle-remaining-calls = throttle.remaining_calls("" + client.ip, "100req/h");
+		set resp.http.x-throttle-remaining-calls-n1 = throttle.remaining_calls("new:" + client.ip, "100req/h");
+
+		set resp.http.x-five = throttle.is_allowed("new:" + client.ip, "100req/h");
+		set resp.http.x-throttle-remaining-calls-n2 = throttle.remaining_calls("new:" + client.ip, "100req/h");
+
 		# no < in varnishtest.
 		set resp.http.X-mem = throttle.memory_usage();
 		if (throttle.memory_usage() < 50000) { set resp.http.x-mem-sane = 1; }
@@ -26,9 +32,17 @@ varnish v1 -vcl+backend {
 client c1 {
 	txreq -url "/"
 	rxresp
+	expect resp.http.x-one == 0.000
 	expect resp.http.x-two == 0.000
 	expect resp.http.x-three == 60.000
-	expect resp.http.X-throttle-remaining-calls == -1
+	expect resp.http.x-four == 60.000
+	expect resp.http.x-throttle-remaining-calls == 98
+	expect resp.http.x-throttle-remaining-calls-n1 == -1
+
+	expect resp.http.x-five == 0.000
+	expect resp.http.x-throttle-remaining-calls-n2 == 99
+
+
 	expect resp.http.x-mem-sane == 1
 }
 

@@ -22,6 +22,10 @@ AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 AC_PROG_MAKE_SET
 
+m4_ifndef([AS_VAR_COPY],
+ [m4_define([AS_VAR_COPY],
+ [AS_LITERAL_IF([$1[]$2], [$1=$$2], [eval $1=\$$2])])])
+
 # Check for rst utilities
 AC_CHECK_PROGS(RST2MAN, [rst2man rst2man.py], "no")
 if test "x$RST2MAN" = "xno"; then
@@ -39,33 +43,14 @@ AC_CHECK_HEADERS([sys/stdlib.h])
 # Check for python
 AC_CHECK_PROGS(PYTHON, [python3 python3.1 python3.2 python2.7 python2.6 python2.5 python2 python], [AC_MSG_ERROR([Python is needed to build this vmod, please install python.])])
 
-# Varnish source tree
-AC_ARG_VAR([VARNISHSRC], [path to Varnish source tree (mandatory)])
-if test "x$VARNISHSRC" = x; then
-	AC_MSG_ERROR([No Varnish source tree specified])
-fi
-VARNISHSRC=`cd $VARNISHSRC && pwd`
-AC_CHECK_FILE([$VARNISHSRC/include/varnishapi.h],
-	[],
-	[AC_MSG_FAILURE(["$VARNISHSRC" is not a Varnish source directory])]
-)
-AM_CONDITIONAL(HAVE_VARNISHSRC, [test -n $VARNISHSRC])
 
-# Check that varnishtest is built in the varnish source directory
-AC_CHECK_FILE([$VARNISHSRC/bin/varnishtest/varnishtest],
-	[],
-	[AC_MSG_FAILURE([Can't find "$VARNISHSRC/bin/varnishtest/varnishtest". Please build your varnish source directory])]
-)
+# Varnish include files tree
+VARNISH_VMOD_INCLUDES
+VARNISH_VMOD_DIR
+VARNISH_VMODTOOL
 
-# vmod installation dir
-AC_ARG_VAR([VMODDIR], [vmod installation directory @<:@LIBDIR/varnish/vmods@:>@])
-if test "x$VMODDIR" = x; then
-	VMODDIR=`pkg-config --variable=vmoddir varnishapi`
-	if test "x$VMODDIR" = x; then
-		AC_MSG_FAILURE([Can't determine vmod installation directory])
-	fi
-fi
-AM_CONDITIONAL(HAVE_VMODDIR, [test -n $VMODDIR])
+AC_PATH_PROG([VARNISHTEST], [varnishtest])
+AC_PATH_PROG([VARNISHD], [varnishd])
 
 AC_CONFIG_FILES([
 	Makefile
